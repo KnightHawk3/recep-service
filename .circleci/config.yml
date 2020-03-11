@@ -1,0 +1,56 @@
+version: 2
+jobs:
+  build:
+    working_directory: /app
+    docker:
+      - image: docker:17.05.0-ce-git
+    steps:
+      - checkout
+      - setup_remote_docker
+      - restore_cache:
+          keys:
+            - v1-{{ .Branch }}
+          paths:
+            - /caches/recep_service.tar
+      - restore_cache:
+          keys:
+            - gradle-cache-{{ checksum "build.gradle.kts" }}
+      - run:
+          name: Load Docker image layer cache
+          command: |
+            set +o pipefail
+            docker load -i /caches/recep_service.tar | true
+      - run:
+          name: Install dependencies in docker image
+          command: |
+            docker build --target=builder --cache-from=recep_service -t recep_service_dependencies .
+      - run:
+          name: Extract gradle cache from docker image
+          command: |
+            docker run --rm recep_service_dependencies tar -cC /home/gradle/.gradle . | tar -xC .gradle-cache
+      - run:
+          name: Build docker image
+          command: |
+            docker build --cache-from=recep_service -t recep_service_dependencies .
+      - run:
+          name: Save Docker image layer cache
+          command: |
+            mkdir -p /caches
+            docker save -o /caches/recep_service.tar recep_service
+      - save_cache:
+          key: v1-{{ .Branch }}-{{ epoch }}
+          paths:
+            - /caches/recep_service.tar
+      - save_cache:
+          key: gradle-cache-{{ checksum "build.gradle.kts" }}
+          paths:
+            - .gradle-cache
+      - deploy:
+          name: Push application Docker image
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              login="$(aws ecr get-login)"
+              ${login}
+              docker tag recep_service "${ECR_ENDPOINT}/recep_service:${CIRCLE_SHA1}"
+              docker push "${ECR_ENDPOINT}/recep_service:${CIRCLE_SHA1}"
+            fi
