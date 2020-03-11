@@ -51,3 +51,7 @@ tasks.withType < KotlinCompile > {
         jvmTarget = "1.8"
     }
 }
+
+tasks.withType < Jar > {
+    archiveFileName.set("recep.jar")
+}
