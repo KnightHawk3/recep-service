@@ -5,7 +5,7 @@ ADD . /builder
 COPY .gradle-cache /home/gradle/.gradle
 RUN gradle build --stacktrace --no-daemon --console=rich
 
-FROM openjdk:11-jre-alpine
+FROM adoptopenjdk:11-jre-openj9
 WORKDIR /app
 EXPOSE 8080
 COPY --from=builder /builder/build/libs/recep.jar .

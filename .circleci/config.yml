@@ -23,15 +23,16 @@ jobs:
       - run:
           name: Install dependencies in docker image
           command: |
-            docker build --target=builder --cache-from=recep_service -t recep_service_dependencies .
+            docker build --target=builder --cache-from=recep_service -t builder .
       - run:
           name: Extract gradle cache from docker image
           command: |
-            docker run --rm recep_service_dependencies tar -cC /home/gradle/.gradle . | tar -xC .gradle-cache
+            set +o pipefail
+            docker run --rm builder tar -cC /home/gradle/.gradle . | tar -xC .gradle-cache
       - run:
           name: Build docker image
           command: |
-            docker build --cache-from=recep_service -t recep_service_dependencies .
+            docker build -t recep_service .
       - run:
           name: Save Docker image layer cache
           command: |
