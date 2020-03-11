@@ -23,7 +23,7 @@ jobs:
       - run:
           name: Install dependencies in docker image
           command: |
-            docker build --rm=false --cache-from=recep_service -t builder .
+            docker build --rm=false --cache-from=recep_service -t recep_service .
       - run:
           name: Extract gradle cache from docker image
           command: |
