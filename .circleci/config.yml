@@ -15,9 +15,9 @@ jobs:
             - gradle-build-caches-{{ .Revision }}
             - gradle-build-caches
       - run:
-        name: Restoring Gradle Build Caches
-        command: |
-          [ -d ~/gradle-build-caches ] &&
+          name: Restoring Gradle Build Caches
+          command: |
+            [ -d ~/gradle-build-caches ] &&
             [ -n "$(ls -A ~/gradle-build-caches)" ] &&
             rm -rf ~/.gradle/caches/build-cache-* &&
             mv ~/gradle-build-caches/* ~/.gradle/caches/ || true
