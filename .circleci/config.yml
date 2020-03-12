@@ -3,42 +3,51 @@ jobs:
   build:
     working_directory: /app
     docker:
-      - image: docker:17.05.0-ce-git
+      - image: circleci/openjdk:11.0.3-jdk-stretch
     steps:
       - checkout
-      - setup_remote_docker
       - restore_cache:
           keys:
-            - v1-{{ .Branch }}
-          paths:
-            - /caches/recep_service.tar
+            - gradle-cache-{{ checksum "build.gradle" }}
+            - gradle-cache
       - restore_cache:
           keys:
-            - gradle-cache-{{ checksum "build.gradle.kts" }}
+            - gradle-build-caches-{{ .Revision }}
+            - gradle-build-caches
       - run:
-          name: Load Docker image layer cache
-          command: |
-            set +o pipefail
-            docker load -i /caches/recep_service.tar | true
+        name: Restoring Gradle Build Caches
+        command: |
+          [ -d ~/gradle-build-caches ] &&
+            [ -n "$(ls -A ~/gradle-build-caches)" ] &&
+            rm -rf ~/.gradle/caches/build-cache-* &&
+            mv ~/gradle-build-caches/* ~/.gradle/caches/ || true
+
       - run:
-          name: Install dependencies in docker image
-          command: |
-            docker build --rm=false --cache-from=recep_service -t recep_service .
-      - run:
-          name: Extract gradle cache from docker image
-          command: |
-            set +o pipefail
-            docker run --rm builder tar -cC /home/gradle/.gradle . | tar -xC .gradle-cache
-      - run:
-          name: Save Docker image layer cache
-          command: |
-            mkdir -p /caches
-            docker save -o /caches/recep_service.tar recep_service
+          name: Building Project
+          command: ./gradlew build
+
       - save_cache:
-          key: v1-{{ .Branch }}-{{ epoch }}
           paths:
-            - /caches/recep_service.tar
+            - ~/.gradle/caches/
+          key: gradle-cache-{{ checksum "build.gradle" }}
+
+      - run:
+          name: Collecting Gradle Build Caches
+          command: |
+            mkdir -p ~/gradle-build-caches
+            [ -d ~/.gradle/caches ] &&
+              [ -n "$(ls -Ad ~/.gradle/caches/build-cache-* 2>/dev/null)" ] &&
+              mv ~/.gradle/caches/build-cache-* ~/gradle-build-caches || true
+          when: always
+
       - save_cache:
-          key: gradle-cache-{{ checksum "build.gradle.kts" }}
           paths:
-            - .gradle-cache
+            - ~/gradle-build-caches
+          key: gradle-build-caches-{{ .Revision }}
+          when: always
+
+workflows:
+  version: 2
+  workflow:
+    jobs:
+    - build
