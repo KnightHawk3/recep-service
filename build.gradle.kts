@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "blue.melody"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.0-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
 
 val developmentOnly by configurations.creating
